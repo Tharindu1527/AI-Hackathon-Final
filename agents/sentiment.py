@@ -4,7 +4,7 @@ from agents.base import BaseAgent
 class SentimentAgent(BaseAgent):
     """Agent specialized in analyzing emotional tone and sentiment"""
     
-    def __init__(self, model="gpt-4"):
+    def __init__(self, model="gpt-4o"):
         """Initialize the Sentiment Agent"""
         super().__init__(
             role="Sentiment Analyzer",

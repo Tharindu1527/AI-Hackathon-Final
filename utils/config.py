@@ -44,3 +44,7 @@ def get_mongodb_uri():
 def get_qdrant_uri():
     """Get Qdrant URI from environment"""
     return os.getenv("QDRANT_URI")
+
+def get_qdrant_api_key():
+    """Get Qdrant API key from environment"""
+    return os.getenv("QDRANT_API_KEY")

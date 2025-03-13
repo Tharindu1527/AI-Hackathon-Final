@@ -4,7 +4,7 @@ from agents.base import BaseAgent
 class SummarizerAgent(BaseAgent):
     """Agent specialized in creating executive summaries"""
     
-    def __init__(self, model="gpt-4"):
+    def __init__(self, model="gpt-4o"):
         """Initialize the Summarizer Agent"""
         super().__init__(
             role="Executive Summarizer",

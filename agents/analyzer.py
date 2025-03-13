@@ -4,7 +4,7 @@ from agents.base import BaseAgent
 class AnalyzerAgent(BaseAgent):
     """Agent specialized in analyzing podcast content structure and topics"""
     
-    def __init__(self, model="gpt-4"):
+    def __init__(self, model="gpt-4o"):
         """Initialize the Analyzer Agent"""
         super().__init__(
             role="Content Analyzer",

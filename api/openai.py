@@ -11,7 +11,7 @@ def get_openai_client():
         ChatOpenAI: Configured OpenAI client
     """
     api_key = get_openai_api_key()
-    return ChatOpenAI(api_key=api_key, model="gpt-4")
+    return ChatOpenAI(api_key=api_key, model="gpt-4o")
 
 def generate_embeddings(text):
     """

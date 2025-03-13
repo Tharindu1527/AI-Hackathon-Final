@@ -5,7 +5,7 @@ from crewai import Task
 class TranscriberAgent(BaseAgent):
     """Agent specialized in podcast transcription refinement"""
     
-    def __init__(self, model="gpt-4"):
+    def __init__(self, model="gpt-4o"):
         """Initialize the Transcriber Agent"""
         super().__init__(
             role="Podcast Transcriber",

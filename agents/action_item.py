@@ -4,7 +4,7 @@ from agents.base import BaseAgent
 class ActionItemAgent(BaseAgent):
     """Agent specialized in extracting actionable insights and recommendations"""
     
-    def __init__(self, model="gpt-4"):
+    def __init__(self, model="gpt-4o"):
         """Initialize the Action Item Agent"""
         super().__init__(
             role="Action Item Extractor",
