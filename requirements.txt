@@ -1,0 +1,23 @@
+streamlit
+python-dotenv
+
+crewai
+langchain
+langchain-openai
+openai
+
+assemblyai
+composio
+pymongo
+qdrant-client
+
+# Utility libraries
+requests
+numpy
+pandas
+
+# Audio processing
+pydub  # Optional: for audio preprocessing
+
+black 
+pytest
