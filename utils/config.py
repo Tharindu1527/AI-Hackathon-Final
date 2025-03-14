@@ -38,8 +38,27 @@ def get_composio_api_key():
     return os.getenv("COMPOSIO_API_KEY")
 
 def get_mongodb_uri():
-    """Get MongoDB URI from environment"""
-    return os.getenv("MONGODB_URI")
+    """Get MongoDB URI from environment with proper formatting for cloud connections"""
+    uri = os.getenv("MONGODB_URI")
+    
+    # Clean up the URI to ensure proper formatting
+    if uri:
+        # Remove quotes that might be included
+        uri = uri.replace('"', '').replace("'", '')
+        
+        # Ensure the database name is specified
+        if '/?' in uri:
+            # URI has options but might be missing db name
+            host_part, options_part = uri.split('/?', 1)
+            if not any(part.startswith('podcast_analytics') for part in host_part.split('/')):
+                # Add database name before options
+                uri = f"{host_part}/podcast_analytics?{options_part}"
+        elif '?' in uri and '/' not in uri.split('?')[0].split('@')[-1]:
+            # Missing slash before question mark
+            base_part, options_part = uri.split('?', 1)
+            uri = f"{base_part}/podcast_analytics?{options_part}"
+    
+    return uri
 
 def get_qdrant_uri():
     """Get Qdrant URI from environment"""

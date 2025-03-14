@@ -10,7 +10,7 @@ from utils.config import load_environment
 from agents.crew import PodcastCrew
 from api.assemblyai import transcribe_podcast
 from api.composio import send_email_summary
-from database.mongodb import store_podcast_data, get_all_podcast_titles
+from database.mongodb import get_mongodb_client, store_podcast_data, get_all_podcast_titles
 from database.qdrant import store_vectors, search_similar_content
 from app.chatbot import generate_answer
 
@@ -19,6 +19,15 @@ load_environment()
 
 def main():
     st.title("Podcast Analyzer & Chatbot")
+
+    # Add a database status indicator
+    try:
+        # Try to connect to MongoDB
+        client = get_mongodb_client()
+        client.admin.command('ping')
+        st.success("✅ Database connection successful")
+    except Exception as e:
+        st.warning(f"⚠️ Database connection unavailable (using mock data): {str(e)}")
     
     tab1, tab2 = st.tabs(["Analyze Podcast", "Chat about Podcasts"])
     
