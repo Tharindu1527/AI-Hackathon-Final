@@ -1,4 +1,4 @@
-# agents/transcriber.py
+# agents/transcriber.py (fixed)
 from agents.base import BaseAgent
 from crewai import Task
 
@@ -16,27 +16,28 @@ class TranscriberAgent(BaseAgent):
             model=model
         )
         
-    def create_task(self, transcript_path):
+    def create_task(self, transcript_content):
         """
         Create a task for the Transcriber Agent
         
         Args:
-            transcript_path: Path to the transcript file
+            transcript_content: The transcript content as a string
             
         Returns:
             Task: CrewAI task
         """
         task = Task(
             description=f"""
-            Your task is to review and refine the transcript at {transcript_path}.
+            Your task is to review and refine the following transcript:
             
-            1. Read the transcript thoroughly
-            2. Correct any obvious transcription errors
-            3. Format the transcript for better readability
-            4. If there are multiple speakers, try to identify and label them
-            5. Ensure punctuation and paragraph breaks are appropriate
-            6. Remove filler words and correct sentence structures when appropriate
-            7. Maintain the original meaning and context of the discussion
+            {transcript_content[:5000]}  # Limiting to 5000 characters to avoid issues
+            
+            1. Correct any obvious transcription errors
+            2. Format the transcript for better readability
+            3. If there are multiple speakers, try to identify and label them
+            4. Ensure punctuation and paragraph breaks are appropriate
+            5. Remove filler words and correct sentence structures when appropriate
+            6. Maintain the original meaning and context of the discussion
             
             The refined transcript should be accurate, well-formatted, and ready for deeper analysis.
             """,
@@ -57,20 +58,18 @@ class TranscriberAgent(BaseAgent):
         Returns:
             str: Refined transcript
         """
-        # Create a temporary file with the transcript
-        import tempfile
+        print(f"Processing transcript with {len(transcript_text)} characters")
         
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as tmp_file:
-            tmp_file.write(transcript_text)
-            transcript_path = tmp_file.name
-        
-        # Create and execute the task
-        task = self.create_task(transcript_path)
+        # Create and execute the task directly with the content
+        task = self.create_task(transcript_text)
         agent = self.create_agent()
-        result = agent.execute_task(task)
         
-        # Clean up the temporary file
-        import os
-        os.unlink(transcript_path)
-        
-        return result
+        try:
+            print("Executing transcriber task...")
+            result = agent.execute_task(task)
+            print(f"Transcriber task completed successfully, result length: {len(str(result))}")
+            return result
+        except Exception as e:
+            print(f"Error in transcriber agent: {str(e)}")
+            # Return a simplified transcript as fallback
+            return f"PROCESSED TRANSCRIPT: {transcript_text[:1000]}... [Content truncated due to error]"

@@ -1,4 +1,4 @@
-# agents/sentiment.py
+# agents/sentiment.py (fixed)
 from agents.base import BaseAgent
 
 class SentimentAgent(BaseAgent):
@@ -20,16 +20,40 @@ class SentimentAgent(BaseAgent):
         Create a task for the Sentiment Agent
         
         Args:
-            transcript_task: The completed transcription task
-            analyzer_task: The completed analyzer task
+            transcript_task: The completed transcription task (string or Task object)
+            analyzer_task: The completed analyzer task (string or Task object)
             
         Returns:
             Task: CrewAI task
         """
         from crewai import Task
         
+        # Handle both string and Task object inputs for transcript
+        transcript_content = transcript_task
+        if hasattr(transcript_task, 'get'):
+            # It's a Task object or dictionary, get the content
+            transcript_content = transcript_task.get("output", transcript_task)
+        elif hasattr(transcript_task, 'output'):
+            # It's a Task object with direct output attribute
+            transcript_content = transcript_task.output
+        
+        # Handle both string and Task object inputs for analyzer
+        analysis_content = analyzer_task
+        if hasattr(analyzer_task, 'get'):
+            # It's a Task object or dictionary, get the content
+            analysis_content = analyzer_task.get("output", analyzer_task)
+        elif hasattr(analyzer_task, 'output'):
+            # It's a Task object with direct output attribute
+            analysis_content = analyzer_task.output
+        
+        # Convert to strings if not already
+        if not isinstance(transcript_content, str):
+            transcript_content = str(transcript_content)
+        if not isinstance(analysis_content, str):
+            analysis_content = str(analysis_content)
+        
         task = Task(
-            description="""
+            description=f"""
             Your task is to analyze the emotional tone and sentiment throughout the podcast.
             
             Perform the following analysis:
@@ -43,10 +67,16 @@ class SentimentAgent(BaseAgent):
             
             Provide a nuanced analysis that goes beyond simple positive/negative classifications
             to reveal the authentic emotional undertones of the conversation.
+            
+            Transcript excerpt:
+            {transcript_content[:3000]}
+            
+            Analysis of content:
+            {analysis_content[:2000]}
             """,
             agent=self.create_agent(),
             expected_output="A detailed sentiment analysis of the podcast discussion.",
-            context=[transcript_task, analyzer_task]
+            context=None
         )
         
         return task

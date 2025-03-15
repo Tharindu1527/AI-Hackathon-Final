@@ -1,4 +1,4 @@
-# agents/summarizer.py
+# agents/summarizer.py (fixed)
 from agents.base import BaseAgent
 
 class SummarizerAgent(BaseAgent):
@@ -20,15 +20,28 @@ class SummarizerAgent(BaseAgent):
         Create a task for the Summarizer Agent
         
         Args:
-            analyzer_task: The completed analyzer task
+            analyzer_task: The completed analyzer task (string or Task object)
             
         Returns:
             Task: CrewAI task
         """
         from crewai import Task
         
+        # Handle both string and Task object inputs
+        analysis_content = analyzer_task
+        if hasattr(analyzer_task, 'get'):
+            # It's a Task object or dictionary, get the content
+            analysis_content = analyzer_task.get("output", analyzer_task)
+        elif hasattr(analyzer_task, 'output'):
+            # It's a Task object with direct output attribute
+            analysis_content = analyzer_task.output
+        
+        # Convert to string if it's not already
+        if not isinstance(analysis_content, str):
+            analysis_content = str(analysis_content)
+        
         task = Task(
-            description="""
+            description=f"""
             Your task is to create an executive summary of the podcast based on the detailed analysis.
             
             The summary should:
@@ -42,10 +55,13 @@ class SummarizerAgent(BaseAgent):
             
             The summary must be valuable to board members who need to understand the key points
             without listening to the entire podcast.
+            
+            Analysis:
+            {analysis_content[:5000]}
             """,
             agent=self.create_agent(),
             expected_output="A concise executive summary highlighting the most important information.",
-            context=[analyzer_task]
+            context=None
         )
         
         return task

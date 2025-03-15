@@ -1,4 +1,4 @@
-# agents/analyzer.py
+# agents/analyzer.py (fixed)
 from agents.base import BaseAgent
 
 class AnalyzerAgent(BaseAgent):
@@ -20,15 +20,28 @@ class AnalyzerAgent(BaseAgent):
         Create a task for the Analyzer Agent
         
         Args:
-            transcript_task: The completed transcription task
+            transcript_task: The completed transcription task (can be a Task object or a string)
             
         Returns:
             Task: CrewAI task
         """
         from crewai import Task
         
+        # Handle both string and Task object inputs
+        transcript_content = transcript_task
+        if hasattr(transcript_task, 'get'):
+            # It's a Task object or dictionary, get the content
+            transcript_content = transcript_task.get("output", transcript_task)
+        elif hasattr(transcript_task, 'output'):
+            # It's a Task object with direct output attribute
+            transcript_content = transcript_task.output
+        
+        # Convert to string if it's not already
+        if not isinstance(transcript_content, str):
+            transcript_content = str(transcript_content)
+        
         task = Task(
-            description="""
+            description=f"""
             Your task is to analyze the refined podcast transcript to identify:
             
             1. Main topics and key themes discussed
@@ -42,10 +55,13 @@ class AnalyzerAgent(BaseAgent):
             including timestamps (if available) or markers to reference specific sections.
             
             Your analysis should be thorough and provide a clear map of what the podcast covered.
+            
+            Here is the transcript:
+            {transcript_content[:5000]}  # Limiting to 5000 characters to avoid issues
             """,
             agent=self.create_agent(),
             expected_output="A detailed analysis of the podcast content structure and main points.",
-            context=[transcript_task]
+            context=None
         )
         
         return task
