@@ -8,65 +8,74 @@ import base64
 
 # Import custom modules
 from utils.config import load_environment
-from agents.crew import PodcastCrew
+from crews import get_crew, list_available_crews
 from api.assemblyai import transcribe_podcast
 from api.composio import send_email_summary
-from database.mongodb import get_mongodb_client, store_podcast_data, get_all_podcast_titles
-from database.qdrant import store_vectors, search_similar_content
+from database.mongodb import store_podcast_data, get_all_podcast_titles, get_podcast_by_title
+from database.qdrant import store_vectors
 from app.chatbot import generate_answer
-from api.tts import text_to_speech, chunk_text_for_tts
+from api.tts import text_to_speech
 
 # Load environment variables
 load_environment()
 
-def get_audio_player_html(file_path):
-    """
-    Create an HTML audio player for the given audio file
-    
-    Args:
-        file_path: Path to the audio file
-        
-    Returns:
-        str: HTML audio player code
-    """
-    # Read audio file
-    try:
-        with open(file_path, "rb") as f:
-            audio_bytes = f.read()
-        
-        # Encode audio bytes to base64
-        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
-        
-        # Get file extension
-        file_ext = os.path.splitext(file_path)[1][1:].lower()
-        mime_type = f"audio/{file_ext}"
-        
-        # Create HTML audio player
-        audio_html = f'''
-        <audio controls style="width: 100%;">
-            <source src="data:{mime_type};base64,{audio_base64}" type="{mime_type}">
-            Your browser does not support the audio element.
-        </audio>
-        '''
-        
-        return audio_html
-    except Exception as e:
-        print(f"Error creating audio player: {e}")
-        return f'<div style="color: red;">Error creating audio player: {str(e)}</div>'
-
 def main():
     st.title("Podcast Analyzer & Chatbot")
 
-    # Add a database status indicator
+    # Add app version and sidebar config
+    st.sidebar.title("Configuration")
+    st.sidebar.caption("Version 2.0 - Enhanced Agent Architecture")
+    
+    # Crew selection
+    available_crews = list_available_crews()
+    crew_display_names = {
+        "standard": "Standard",
+        "enhanced": "Enhanced (with fact-checking)",
+        "multilingual": "Multilingual",
+        "research": "Research-focused",
+        "deep_research": "Deep Research",
+        "fact_checking": "Fact Checking",
+        "advanced_multilingual": "Advanced Multilingual",
+        "localization": "Localization"
+    }
+    
+    crew_options = [crew_display_names.get(crew, crew.replace("_", " ").title()) for crew in available_crews[:5]]  # Limit to first 5 for simplicity
+    
+    crew_type = st.sidebar.radio(
+        "Crew Type",
+        crew_options
+    )
+    
+    # Convert display name back to crew type
+    reverse_mapping = {v: k for k, v in crew_display_names.items()}
+    selected_crew_type = reverse_mapping.get(crew_type, "standard")
+    
+    # Model selection
+    model_options = ["gpt-4o", "gpt-3.5-turbo"]
+    selected_model = st.sidebar.selectbox("AI Model", options=model_options, index=0)
+    
+    # Multilingual options
+    languages = ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Arabic"]
+    if "Multilingual" in crew_type or "Localization" in crew_type:
+        target_languages = st.sidebar.multiselect(
+            "Target Languages",
+            options=languages,
+            default=["English", "Spanish"]
+        )
+    else:
+        target_languages = ["English"]
+    
+    # Add database status indicator
     try:
-        # Try to connect to MongoDB
+        from database.mongodb import get_mongodb_client
         client = get_mongodb_client()
         client.admin.command('ping')
-        st.success("✅ Database connection successful")
+        st.sidebar.success("✅ Database connection successful")
     except Exception as e:
-        st.warning(f"⚠️ Database connection unavailable (using mock data): {str(e)}")
+        st.sidebar.warning(f"⚠️ Database connection unavailable (using mock data): {str(e)}")
     
-    tab1, tab2, tab3 = st.tabs(["Analyze Podcast", "Chat about Podcasts", "Listen to Summaries"])
+    # Create tabs for different functions
+    tab1, tab2, tab3, tab4 = st.tabs(["Analyze Podcast", "Chat about Podcasts", "Listen to Summaries", "Fact Check"])
     
     with tab1:
         st.header("Upload and Analyze Podcast")
@@ -76,9 +85,13 @@ def main():
         podcast_title = st.text_input("Podcast Title")
         board_emails = st.text_area("Board Member Emails (one per line)")
         
-        if st.button("Analyze Podcast") and uploaded_file is not None:
+        if st.button("Analyze Podcast", key="analyze_podcast_btn"):
             if not podcast_title:
                 st.error("Please enter a podcast title")
+                return
+                
+            if uploaded_file is None:
+                st.error("Please upload a podcast audio file")
                 return
                 
             # Save uploaded file temporarily
@@ -98,15 +111,21 @@ def main():
                         # For testing, generate a mock transcript
                         transcript = f"This is a mock transcript for '{podcast_title}'. The real transcription failed."
                     
-                    # Run the CrewAI analysis directly with the transcript content
-                    st.info("Running multi-agent analysis...")
-                    podcast_crew = PodcastCrew()
+                    # Create the appropriate crew with the selected model
+                    st.info(f"Running {crew_type} crew analysis with {selected_model}...")
                     
-                    # Pass the transcript content directly to run_analysis
-                    result = podcast_crew.run_analysis(transcript)
+                    # Create crew with options
+                    crew_kwargs = {"model": selected_model}
                     
-                    # Parse the results
-                    analysis_result = json.loads(result)
+                    # Add language options for multilingual crews
+                    if "Multilingual" in crew_type or "Localization" in crew_type:
+                        crew_kwargs["target_languages"] = target_languages
+                    
+                    podcast_crew = get_crew(selected_crew_type, **crew_kwargs)
+                    
+                    # Run the analysis
+                    result_json = podcast_crew.run_analysis(transcript)
+                    analysis_result = json.loads(result_json)
                     
                     # Prepare data for storage
                     podcast_data = {
@@ -119,8 +138,12 @@ def main():
                         "action_items": analysis_result.get("action_items", ["Action items not available"])
                     }
                     
+                    # Add translations if available
+                    if "translations" in analysis_result:
+                        podcast_data["translations"] = analysis_result["translations"]
+                    
                     # Store in MongoDB
-                    st.info("Storing results in MongoDB...")
+                    st.info("Storing results in database...")
                     try:
                         summary_id = store_podcast_data(podcast_data)
                         st.success("Data stored successfully!")
@@ -129,7 +152,7 @@ def main():
                         summary_id = "mock_id_12345"
                     
                     # Store in Qdrant for vector search
-                    st.info("Storing vectors in Qdrant...")
+                    st.info("Storing vectors for semantic search...")
                     try:
                         store_vectors(podcast_data, summary_id)
                         st.success("Vectors stored successfully!")
@@ -146,75 +169,78 @@ def main():
                         except Exception as e:
                             st.error(f"Error sending email: {str(e)}")
                     
-                    # Display summary with better error handling
+                    # Display results
                     st.success("Podcast analysis complete!")
-
-                    # Print raw result for debugging
-                    print(f"Analysis result structure: {analysis_result}")
-
+                    
                     # Executive Summary
                     st.subheader("Executive Summary")
-                    if analysis_result.get("summary") and len(analysis_result["summary"]) > 10:
-                        st.write(analysis_result["summary"])
-                        
-                        # Add a button to generate TTS for the summary
-                        if st.button("Listen to Summary"):
-                            with st.spinner("Generating audio..."):
-                                summary_text = analysis_result["summary"]
-                                audio_file = text_to_speech(summary_text)
-                                if audio_file:
-                                    st.success("Audio generated successfully!")
-                                    st.audio(audio_file)
-                                else:
-                                    st.error("Failed to generate audio summary")
-                    else:
-                        st.info("The executive summary could not be generated completely.")
-                        # Provide fallback summary
-                        st.write(analysis_result.get("summary", "This podcast covers various topics and insights. The complete analysis is still processing."))
-
+                    st.write(analysis_result.get("summary", "The executive summary could not be generated completely."))
+                    
                     # Key Topics
                     st.subheader("Key Topics")
-                    if analysis_result.get("key_topics") and len(analysis_result["key_topics"]) > 0:
-                        for topic in analysis_result["key_topics"]:
-                            if topic and len(topic) > 3:  # Ensure topic is not empty or too short
-                                st.write(f"- {topic}")
-                    else:
-                        st.info("Key topics could not be identified completely.")
-                        # Provide fallback topics
-                        st.write("- Topic information not available")
-                        st.write("- Please try reanalyzing the podcast")
-
+                    for topic in analysis_result.get("key_topics", ["Topic information not available"]):
+                        st.write(f"- {topic}")
+                    
                     # Sentiment Analysis
                     st.subheader("Sentiment Analysis")
-                    if analysis_result.get("sentiment_analysis") and len(analysis_result["sentiment_analysis"]) > 10:
-                        st.write(analysis_result["sentiment_analysis"])
-                    else:
-                        st.info("Sentiment analysis could not be generated completely.")
-                        # Provide fallback sentiment
-                        st.write(analysis_result.get("sentiment_analysis", "The sentiment analysis for this podcast is pending."))
-
+                    st.write(analysis_result.get("sentiment_analysis", "Sentiment analysis could not be generated completely."))
+                    
                     # Action Items
                     st.subheader("Action Items")
-                    if analysis_result.get("action_items") and len(analysis_result["action_items"]) > 0:
-                        for item in analysis_result["action_items"]:
-                            if item and len(item) > 3:  # Ensure item is not empty or too short
-                                st.write(f"- {item}")
-                                
-                        # Add a button to generate TTS for action items
-                        if st.button("Listen to Action Items"):
-                            with st.spinner("Generating audio..."):
-                                action_items_text = "Action Items: " + ". ".join(analysis_result["action_items"])
-                                audio_file = text_to_speech(action_items_text)
-                                if audio_file:
-                                    st.success("Audio generated successfully!")
-                                    st.audio(audio_file)
+                    for item in analysis_result.get("action_items", ["Action items not available"]):
+                        st.write(f"- {item}")
+                    
+                    # Display translations if available (Multilingual crew)
+                    if "translations" in analysis_result:
+                        st.subheader("Translations")
+                        
+                        for language, content in analysis_result["translations"].items():
+                            with st.expander(f"{language.capitalize()} Translation"):
+                                if isinstance(content, dict):
+                                    if "summary" in content:
+                                        st.write("**Summary:**")
+                                        st.write(content["summary"])
+                                    
+                                    if "action_items" in content:
+                                        st.write("**Action Items:**")
+                                        if isinstance(content["action_items"], list):
+                                            for item in content["action_items"]:
+                                                st.write(f"- {item}")
+                                        else:
+                                            st.write(content["action_items"])
                                 else:
-                                    st.error("Failed to generate audio for action items")
-                    else:
-                        st.info("Action items could not be identified completely.")
-                        # Provide fallback action items
-                        st.write("- Action items not available")
-                        st.write("- Consider reanalyzing with adjusted agent parameters")
+                                    st.write(content)
+                    
+                    # Enhanced features (Research, Fact Check)
+                    if "research" in analysis_result:
+                        st.subheader("Research Insights")
+                        st.write(analysis_result["research"])
+                    
+                    if "fact_check" in analysis_result:
+                        st.subheader("Fact Check Results")
+                        fact_check = analysis_result["fact_check"]
+                        
+                        if isinstance(fact_check, dict):
+                            if "results" in fact_check:
+                                for result in fact_check["results"]:
+                                    status_color = "green" if result["status"] == "Verified" else "red" if result["status"] == "Refuted" else "orange"
+                                    st.markdown(f"- **Claim:** {result['claim']}  \n  **Status:** <span style='color:{status_color}'>{result['status']}</span>", unsafe_allow_html=True)
+                            else:
+                                st.write(fact_check)
+                        else:
+                            st.write(fact_check)
+                    
+                    # Add TTS option
+                    if st.button("Generate Audio Summary", key="generate_audio_summary_btn1"):
+                        with st.spinner("Generating audio..."):
+                            summary_text = analysis_result.get("summary", "No summary available.")
+                            voice = st.selectbox("Select voice:", ["alloy", "echo", "fable", "onyx", "nova", "shimmer"], key="voice_select1")
+                            audio_file = text_to_speech(summary_text, voice=voice)
+                            if audio_file:
+                                st.success("Audio generated successfully!")
+                                st.audio(audio_file)
+                            else:
+                                st.error("Failed to generate audio summary")
                     
                     # Clean up temporary files
                     os.unlink(audio_path)
@@ -225,160 +251,220 @@ def main():
     with tab2:
         st.header("Chat about Analyzed Podcasts")
         
-        # Display available podcasts
+        # Podcast selection
         podcast_titles = get_all_podcast_titles()
         if not podcast_titles:
             st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
-            return
-        
-        # Create a selection box for podcasts
-        selected_podcast = st.selectbox(
-            "Select a podcast to chat about:",
-            options=podcast_titles,
-            index=0,
-            key="chat_podcast_select"
-        )
+        else:
+            selected_podcast = st.selectbox(
+                "Select a podcast to chat about:",
+                options=podcast_titles,
+                index=0,
+                key="chat_podcast_select"
+            )
+                
+            st.write(f"Selected podcast: **{selected_podcast}**")
             
-        st.write(f"Selected podcast: **{selected_podcast}**")
-        
-        user_question = st.text_input("Ask a question about this podcast")
-        
-        if st.button("Ask") and user_question:
-            with st.spinner("Searching for answer..."):
-                try:
-                    # Get podcast data from MongoDB by title
-                    from database.mongodb import get_podcast_by_title
-                    podcast_data = get_podcast_by_title(selected_podcast)
+            user_question = st.text_input("Ask a question about this podcast")
+            
+            if st.button("Ask", key="ask_question_btn"):
+                if not user_question:
+                    st.error("Please enter a question")
+                    return
                     
-                    if not podcast_data:
-                        st.error(f"Could not find podcast data for '{selected_podcast}'")
-                        return
-                    
-                    # Generate answer
-                    from app.chatbot import generate_answer
-                    answer = generate_answer(podcast_data, user_question)
-                    
-                    st.subheader("Answer")
-                    st.write(answer)
-                    
-                    # Add TTS option for the answer
-                    if st.button("Listen to Answer"):
-                        with st.spinner("Generating audio..."):
-                            audio_file = text_to_speech(answer)
-                            if audio_file:
-                                st.success("Audio generated successfully!")
-                                st.audio(audio_file)
-                            else:
-                                st.error("Failed to generate audio for answer")
-                    
-                    st.subheader("Source")
-                    st.write(f"Based on podcast: {podcast_data.get('title', 'Unknown Podcast')}")
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
-                    st.info("Using fallback search method...")
-                    
+                with st.spinner("Searching for answer..."):
                     try:
-                        # Fallback to vector search
-                        search_results = search_similar_content(user_question)
+                        # Get podcast data
+                        podcast_data = get_podcast_by_title(selected_podcast)
                         
-                        if not search_results:
-                            st.warning("No relevant podcast information found for your question.")
-                            return
-                        
-                        # Get the most relevant podcast data
-                        podcast_data = search_results[0].payload
-                        
-                        # Generate answer
-                        answer = generate_answer(podcast_data, user_question)
-                        
-                        st.subheader("Answer")
-                        st.write(answer)
-                        
-                        st.subheader("Source")
-                        st.write(f"Based on podcast: {podcast_data.get('title', 'Unknown Podcast')}")
-                    except Exception as e2:
-                        st.error(f"Fallback search also failed: {str(e2)}")
-                        st.warning("Please try again with a different question or podcast.")
-                        
+                        if not podcast_data:
+                            st.error(f"Could not find podcast data for '{selected_podcast}'")
+                        else:
+                            # Generate answer
+                            answer = generate_answer(podcast_data, user_question)
+                            
+                            st.subheader("Answer")
+                            st.write(answer)
+                            
+                            # Add TTS option for the answer
+                            if st.button("Listen to Answer", key="listen_answer_btn"):
+                                with st.spinner("Generating audio..."):
+                                    voice = st.selectbox("Select voice:", ["alloy", "echo", "fable", "onyx", "nova", "shimmer"], key="voice_select2")
+                                    audio_file = text_to_speech(answer, voice=voice)
+                                    if audio_file:
+                                        st.success("Audio generated successfully!")
+                                        st.audio(audio_file)
+                                    else:
+                                        st.error("Failed to generate audio for answer")
+                            
+                            st.subheader("Source")
+                            st.write(f"Based on podcast: {podcast_data.get('title', 'Unknown Podcast')}")
+                    except Exception as e:
+                        st.error(f"An error occurred: {str(e)}")
+    
     with tab3:
         st.header("Listen to Podcast Summaries")
         
-        # Display available podcasts
+        # Podcast selection
         podcast_titles = get_all_podcast_titles()
         if not podcast_titles:
             st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
-            return
-        
-        # Create a selection box for podcasts
-        selected_podcast = st.selectbox(
-            "Select a podcast summary to listen to:",
-            options=podcast_titles,
-            index=0,
-            key="listen_podcast_select"
-        )
-        
-        # Voice selection
-        voice_options = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
-        selected_voice = st.selectbox(
-            "Select a voice:",
-            options=voice_options,
-            index=0
-        )
-        
-        if st.button("Generate Audio Summary"):
-            with st.spinner("Generating audio summary..."):
-                try:
-                    # Get podcast data from MongoDB by title
-                    from database.mongodb import get_podcast_by_title
-                    podcast_data = get_podcast_by_title(selected_podcast)
-                    
-                    if not podcast_data:
-                        st.error(f"Could not find podcast data for '{selected_podcast}'")
-                        return
-                    
-                    # Prepare the summary content
-                    summary_text = podcast_data.get("summary", "Summary not available.")
-                    
-                    # Include key topics in the audio summary
-                    key_topics = podcast_data.get("key_topics", [])
-                    if key_topics and len(key_topics) > 0:
-                        topics_text = "Key topics include: " + ", ".join(key_topics[:5])  # Limit to first 5 topics
-                        summary_text += "\n\n" + topics_text
-                    
-                    # Include a condensed version of action items
-                    action_items = podcast_data.get("action_items", [])
-                    if action_items and len(action_items) > 0:
-                        actions_text = "Action items include: " + ". ".join(action_items[:3])  # Limit to first 3 items
-                        summary_text += "\n\n" + actions_text
-                    
-                    # Generate the audio file
-                    audio_file = text_to_speech(summary_text, voice=selected_voice)
-                    
-                    if audio_file:
-                        st.success(f"Audio summary for '{selected_podcast}' generated successfully!")
-                        
-                        # Display audio player
-                        st.audio(audio_file)
-                        
-                        # Display the text that was converted to speech
-                        with st.expander("Show summary text"):
-                            st.write(summary_text)
+        else:
+            selected_podcast = st.selectbox(
+                "Select a podcast to listen to:",
+                options=podcast_titles,
+                index=0,
+                key="listen_podcast_select"
+            )
+            
+            # Voice selection
+            voice_options = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
+            selected_voice = st.selectbox("Select a voice:", options=voice_options, index=0, key="voice_select3")
+            
+            # Language selection (for multilingual podcasts)
+            podcast_data = get_podcast_by_title(selected_podcast)
+            available_languages = ["English"]
+            
+            if podcast_data and "translations" in podcast_data:
+                for language in podcast_data["translations"]:
+                    if language.lower() != "english":
+                        available_languages.append(language.capitalize())
+            
+            selected_language = st.selectbox("Select language:", options=available_languages, index=0, key="language_select")
+            
+            if st.button("Generate Audio Summary", key="generate_audio_summary_btn2"):
+                with st.spinner("Generating audio summary..."):
+                    try:
+                        if not podcast_data:
+                            st.error(f"Could not find podcast data for '{selected_podcast}'")
+                        else:
+                            # Get the appropriate summary based on language
+                            if selected_language.lower() == "english":
+                                summary_text = podcast_data.get("summary", "Summary not available.")
+                            else:
+                                language_key = selected_language.lower()
+                                if "translations" in podcast_data and language_key in podcast_data["translations"]:
+                                    if isinstance(podcast_data["translations"][language_key], dict):
+                                        summary_text = podcast_data["translations"][language_key].get("summary", "Translation not available.")
+                                    else:
+                                        summary_text = podcast_data["translations"][language_key]
+                                else:
+                                    summary_text = "Translation not available for this language."
                             
-                        # Add download link
-                        with open(audio_file, "rb") as file:
-                            audio_bytes = file.read()
-                            file_name = f"{selected_podcast.replace(' ', '_')}_summary.mp3"
-                            st.download_button(
-                                label="Download Audio Summary",
-                                data=audio_bytes,
-                                file_name=file_name,
-                                mime="audio/mp3"
-                            )
-                    else:
-                        st.error("Failed to generate audio summary")
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
-                    st.info("Please try again or select a different podcast.")
+                            # Generate audio
+                            audio_file = text_to_speech(summary_text, voice=selected_voice)
+                            
+                            if audio_file:
+                                st.success(f"Audio summary for '{selected_podcast}' generated successfully!")
+                                st.audio(audio_file)
+                                
+                                # Add download option
+                                with open(audio_file, "rb") as file:
+                                    audio_bytes = file.read()
+                                    file_name = f"{selected_podcast.replace(' ', '_')}_{selected_language}_summary.mp3"
+                                    st.download_button(
+                                        label="Download Audio Summary",
+                                        data=audio_bytes,
+                                        file_name=file_name,
+                                        mime="audio/mp3",
+                                        key="download_summary_btn"
+                                    )
+                            else:
+                                st.error("Failed to generate audio summary")
+                    except Exception as e:
+                        st.error(f"An error occurred: {str(e)}")
+    
+    with tab4:
+        st.header("Fact Check Podcast")
+        
+        # Podcast selection
+        podcast_titles = get_all_podcast_titles()
+        if not podcast_titles:
+            st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
+        else:
+            selected_podcast = st.selectbox(
+                "Select a podcast to fact check:",
+                options=podcast_titles,
+                index=0,
+                key="fact_check_podcast_select"
+            )
+            
+            if st.button("Extract Claims", key="extract_claims_btn"):
+                with st.spinner("Extracting claims from podcast..."):
+                    try:
+                        # Get podcast data
+                        podcast_data = get_podcast_by_title(selected_podcast)
+                        
+                        if not podcast_data:
+                            st.error(f"Could not find podcast data for '{selected_podcast}'")
+                        else:
+                            # Get the transcript
+                            transcript = podcast_data.get("transcript", "")
+                            
+                            if not transcript:
+                                st.error("No transcript available for fact checking")
+                            else:
+                                # Use the fact checker agent
+                                from agents.registry import get_agent
+                                fact_checker = get_agent("fact_checker")
+                                
+                                st.info("Extracting claims...")
+                                claims = fact_checker.extract_claims(transcript)
+                                
+                                if not claims:
+                                    st.warning("No factual claims were identified in this podcast")
+                                else:
+                                    st.success(f"Found {len(claims)} factual claims")
+                                    
+                                    # Store claims in session state for later use
+                                    st.session_state.claims = claims
+                                    
+                                    # Display claims
+                                    st.subheader("Identified Claims")
+                                    for i, claim in enumerate(claims):
+                                        st.write(f"{i+1}. {claim}")
+                                    
+                                    # Allow user to select claims to verify
+                                    st.session_state.selected_claims = st.multiselect(
+                                        "Select claims to verify:",
+                                        options=claims,
+                                        default=claims[:min(3, len(claims))]
+                                    )
+                    except Exception as e:
+                        st.error(f"An error occurred during claim extraction: {str(e)}")
+            
+            # Check if we have selected claims in session state
+            if hasattr(st.session_state, 'selected_claims') and st.session_state.selected_claims:
+                if st.button("Verify Selected Claims", key="verify_claims_btn"):
+                    st.subheader("Verification Results")
+                    
+                    # Get fact checker agent
+                    from agents.registry import get_agent
+                    fact_checker = get_agent("fact_checker")
+                    
+                    progress_bar = st.progress(0)
+                    results = []
+                    
+                    # Verify each selected claim
+                    for i, claim in enumerate(st.session_state.selected_claims):
+                        with st.spinner(f"Verifying claim {i+1} of {len(st.session_state.selected_claims)}..."):
+                            result = fact_checker.verify_claim(claim, use_wikipedia=True)
+                            results.append(result)
+                            
+                            # Update progress
+                            progress = (i + 1) / len(st.session_state.selected_claims)
+                            progress_bar.progress(progress)
+                    
+                    # Display results
+                    st.success("Verification complete!")
+                    
+                    for result in results:
+                        status_color = "green" if result["status"] == "Verified" else "red" if result["status"] == "Refuted" else "orange"
+                        
+                        with st.expander(f"{result['claim']} - {result['status']}"):
+                            st.markdown(f"**Status:** <span style='color:{status_color}'>{result['status']}</span>", unsafe_allow_html=True)
+                            st.write("**Details:**")
+                            st.write(result["details"])
 
 if __name__ == "__main__":
     main()
