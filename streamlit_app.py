@@ -1,4 +1,3 @@
-# streamlit_app.py
 import streamlit as st
 import os
 import tempfile
@@ -13,6 +12,7 @@ from api.composio import send_email_summary
 from database.mongodb import get_mongodb_client, store_podcast_data, get_all_podcast_titles
 from database.qdrant import store_vectors, search_similar_content
 from app.chatbot import generate_answer
+from agents.jira_integration import JiraAgent
 
 # Load environment variables
 load_environment()
@@ -38,6 +38,7 @@ def main():
         
         podcast_title = st.text_input("Podcast Title")
         board_emails = st.text_area("Board Member Emails (one per line)")
+        create_jira_tasks = st.checkbox("Create Jira tasks for action items", value=True)
         
         if st.button("Analyze Podcast") and uploaded_file is not None:
             if not podcast_title:
@@ -85,6 +86,27 @@ def main():
                 # Store in Qdrant for vector search
                 st.info("Storing vectors in Qdrant...")
                 store_vectors(podcast_data, summary_id)
+                
+                # Create Jira issues for action items
+                if create_jira_tasks:
+                    try:
+                        st.info("Creating Jira tasks for action items...")
+                        jira_agent = JiraAgent()
+                        jira_issues = []
+                        
+                        for item in podcast_data["action_items"]:
+                            task = {
+                                'summary': f"[Podcast: {podcast_title}] {item}",
+                                'description': f"Action item from podcast analysis.\n\nPodcast: {podcast_title}\nDate Analyzed: {podcast_data['date_analyzed']}\n\nContext:\n{podcast_data['summary']}"
+                            }
+                            issue_key = jira_agent.process_task(task)
+                            if issue_key:
+                                jira_issues.append(issue_key)
+                        
+                        if jira_issues:
+                            st.success(f"Created {len(jira_issues)} Jira issues: {', '.join(jira_issues)}")
+                    except Exception as e:
+                        st.error(f"Error creating Jira issues: {str(e)}")
                 
                 # Send email to board members
                 if board_emails:
