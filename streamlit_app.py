@@ -4,6 +4,7 @@ import os
 import tempfile
 from datetime import datetime
 import json
+import base64
 
 # Import custom modules
 from utils.config import load_environment
@@ -13,9 +14,45 @@ from api.composio import send_email_summary
 from database.mongodb import get_mongodb_client, store_podcast_data, get_all_podcast_titles
 from database.qdrant import store_vectors, search_similar_content
 from app.chatbot import generate_answer
+from api.tts import text_to_speech, chunk_text_for_tts
 
 # Load environment variables
 load_environment()
+
+def get_audio_player_html(file_path):
+    """
+    Create an HTML audio player for the given audio file
+    
+    Args:
+        file_path: Path to the audio file
+        
+    Returns:
+        str: HTML audio player code
+    """
+    # Read audio file
+    try:
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        
+        # Encode audio bytes to base64
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+        
+        # Get file extension
+        file_ext = os.path.splitext(file_path)[1][1:].lower()
+        mime_type = f"audio/{file_ext}"
+        
+        # Create HTML audio player
+        audio_html = f'''
+        <audio controls style="width: 100%;">
+            <source src="data:{mime_type};base64,{audio_base64}" type="{mime_type}">
+            Your browser does not support the audio element.
+        </audio>
+        '''
+        
+        return audio_html
+    except Exception as e:
+        print(f"Error creating audio player: {e}")
+        return f'<div style="color: red;">Error creating audio player: {str(e)}</div>'
 
 def main():
     st.title("Podcast Analyzer & Chatbot")
@@ -29,7 +66,7 @@ def main():
     except Exception as e:
         st.warning(f"⚠️ Database connection unavailable (using mock data): {str(e)}")
     
-    tab1, tab2 = st.tabs(["Analyze Podcast", "Chat about Podcasts"])
+    tab1, tab2, tab3 = st.tabs(["Analyze Podcast", "Chat about Podcasts", "Listen to Summaries"])
     
     with tab1:
         st.header("Upload and Analyze Podcast")
@@ -119,6 +156,17 @@ def main():
                     st.subheader("Executive Summary")
                     if analysis_result.get("summary") and len(analysis_result["summary"]) > 10:
                         st.write(analysis_result["summary"])
+                        
+                        # Add a button to generate TTS for the summary
+                        if st.button("Listen to Summary"):
+                            with st.spinner("Generating audio..."):
+                                summary_text = analysis_result["summary"]
+                                audio_file = text_to_speech(summary_text)
+                                if audio_file:
+                                    st.success("Audio generated successfully!")
+                                    st.audio(audio_file)
+                                else:
+                                    st.error("Failed to generate audio summary")
                     else:
                         st.info("The executive summary could not be generated completely.")
                         # Provide fallback summary
@@ -151,6 +199,17 @@ def main():
                         for item in analysis_result["action_items"]:
                             if item and len(item) > 3:  # Ensure item is not empty or too short
                                 st.write(f"- {item}")
+                                
+                        # Add a button to generate TTS for action items
+                        if st.button("Listen to Action Items"):
+                            with st.spinner("Generating audio..."):
+                                action_items_text = "Action Items: " + ". ".join(analysis_result["action_items"])
+                                audio_file = text_to_speech(action_items_text)
+                                if audio_file:
+                                    st.success("Audio generated successfully!")
+                                    st.audio(audio_file)
+                                else:
+                                    st.error("Failed to generate audio for action items")
                     else:
                         st.info("Action items could not be identified completely.")
                         # Provide fallback action items
@@ -176,7 +235,8 @@ def main():
         selected_podcast = st.selectbox(
             "Select a podcast to chat about:",
             options=podcast_titles,
-            index=0
+            index=0,
+            key="chat_podcast_select"
         )
             
         st.write(f"Selected podcast: **{selected_podcast}**")
@@ -200,6 +260,16 @@ def main():
                     
                     st.subheader("Answer")
                     st.write(answer)
+                    
+                    # Add TTS option for the answer
+                    if st.button("Listen to Answer"):
+                        with st.spinner("Generating audio..."):
+                            audio_file = text_to_speech(answer)
+                            if audio_file:
+                                st.success("Audio generated successfully!")
+                                st.audio(audio_file)
+                            else:
+                                st.error("Failed to generate audio for answer")
                     
                     st.subheader("Source")
                     st.write(f"Based on podcast: {podcast_data.get('title', 'Unknown Podcast')}")
@@ -229,5 +299,86 @@ def main():
                     except Exception as e2:
                         st.error(f"Fallback search also failed: {str(e2)}")
                         st.warning("Please try again with a different question or podcast.")
+                        
+    with tab3:
+        st.header("Listen to Podcast Summaries")
+        
+        # Display available podcasts
+        podcast_titles = get_all_podcast_titles()
+        if not podcast_titles:
+            st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
+            return
+        
+        # Create a selection box for podcasts
+        selected_podcast = st.selectbox(
+            "Select a podcast summary to listen to:",
+            options=podcast_titles,
+            index=0,
+            key="listen_podcast_select"
+        )
+        
+        # Voice selection
+        voice_options = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
+        selected_voice = st.selectbox(
+            "Select a voice:",
+            options=voice_options,
+            index=0
+        )
+        
+        if st.button("Generate Audio Summary"):
+            with st.spinner("Generating audio summary..."):
+                try:
+                    # Get podcast data from MongoDB by title
+                    from database.mongodb import get_podcast_by_title
+                    podcast_data = get_podcast_by_title(selected_podcast)
+                    
+                    if not podcast_data:
+                        st.error(f"Could not find podcast data for '{selected_podcast}'")
+                        return
+                    
+                    # Prepare the summary content
+                    summary_text = podcast_data.get("summary", "Summary not available.")
+                    
+                    # Include key topics in the audio summary
+                    key_topics = podcast_data.get("key_topics", [])
+                    if key_topics and len(key_topics) > 0:
+                        topics_text = "Key topics include: " + ", ".join(key_topics[:5])  # Limit to first 5 topics
+                        summary_text += "\n\n" + topics_text
+                    
+                    # Include a condensed version of action items
+                    action_items = podcast_data.get("action_items", [])
+                    if action_items and len(action_items) > 0:
+                        actions_text = "Action items include: " + ". ".join(action_items[:3])  # Limit to first 3 items
+                        summary_text += "\n\n" + actions_text
+                    
+                    # Generate the audio file
+                    audio_file = text_to_speech(summary_text, voice=selected_voice)
+                    
+                    if audio_file:
+                        st.success(f"Audio summary for '{selected_podcast}' generated successfully!")
+                        
+                        # Display audio player
+                        st.audio(audio_file)
+                        
+                        # Display the text that was converted to speech
+                        with st.expander("Show summary text"):
+                            st.write(summary_text)
+                            
+                        # Add download link
+                        with open(audio_file, "rb") as file:
+                            audio_bytes = file.read()
+                            file_name = f"{selected_podcast.replace(' ', '_')}_summary.mp3"
+                            st.download_button(
+                                label="Download Audio Summary",
+                                data=audio_bytes,
+                                file_name=file_name,
+                                mime="audio/mp3"
+                            )
+                    else:
+                        st.error("Failed to generate audio summary")
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
+                    st.info("Please try again or select a different podcast.")
+
 if __name__ == "__main__":
     main()
