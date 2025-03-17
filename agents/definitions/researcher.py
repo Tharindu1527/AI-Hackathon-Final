@@ -5,13 +5,13 @@ from api.wiki_api import search_wikipedia, search_wikipedia_with_suggestions
 
 @register_agent("researcher")
 class ResearcherAgent(BaseAgent):
-    """Agent specialized in researching additional context and information for podcast topics"""
+    """Agent specialized in researching additional context and information for Meeting topics"""
     
     def __init__(self, model="gpt-4o"):
         """Initialize the Researcher Agent"""
         super().__init__(
             role="Topic Researcher",
-            goal="Augment podcast topics with additional research, context, and sources",
+            goal="Augment Meeting topics with additional research, context, and sources",
             backstory="I have a background in academic research with expertise in finding, "
                     "evaluating, and synthesizing information from diverse sources. "
                     "I excel at identifying knowledge gaps and providing valuable context "
@@ -92,10 +92,10 @@ class ResearcherAgent(BaseAgent):
     
     def augment_podcast_analysis(self, analysis_content):
         """
-        Augment podcast analysis with additional research
+        Augment Meeting analysis with additional research
         
         Args:
-            analysis_content: Podcast analysis content
+            analysis_content: Meeting analysis content
             
         Returns:
             str: Augmented analysis with research
@@ -111,7 +111,7 @@ class ResearcherAgent(BaseAgent):
         Extract key topics that need additional research
         
         Args:
-            summary_content: Podcast summary content
+            summary_content: Meeting summary content
             max_topics: Maximum number of topics to extract
             
         Returns:

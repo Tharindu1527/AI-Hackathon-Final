@@ -10,7 +10,7 @@ from agents.tasks.fact_checking import FactCheckingTask
 from agents.tasks.research import ResearchTask
 
 class DeepResearchCrew(BaseCrew):
-    """Specialized crew for deep research of podcast topics"""
+    """Specialized crew for deep research of Meeting topics"""
     
     def __init__(self, model="gpt-4o"):
         """
@@ -30,7 +30,7 @@ class DeepResearchCrew(BaseCrew):
     
     def run_analysis(self, transcript_content, research_depth="deep"):
         """
-        Run deep research analysis on podcast content
+        Run deep research analysis on Meeting content
         
         Args:
             transcript_content: Raw transcript content
@@ -120,7 +120,7 @@ class DeepResearchCrew(BaseCrew):
             if "methodology" not in result["research"]:
                 result["research"]["methodology"] = (
                     f"Deep research analysis performed at {research_depth} depth. "
-                    "Topics were extracted from the podcast transcript and researched "
+                    "Topics were extracted from the Meeting transcript and researched "
                     "using multiple reference sources. The analysis includes context, "
                     "related concepts, and knowledge gaps identified during research."
                 )
@@ -131,7 +131,7 @@ class DeepResearchCrew(BaseCrew):
             return result_json
 
 class FactCheckingCrew(BaseCrew):
-    """Specialized crew for fact checking podcast content"""
+    """Specialized crew for fact checking Meeting content"""
     
     def __init__(self, model="gpt-4o"):
         """
@@ -150,7 +150,7 @@ class FactCheckingCrew(BaseCrew):
     
     def run_fact_check(self, transcript_content, max_claims=10):
         """
-        Run fact checking on podcast content
+        Run fact checking on Meeting content
         
         Args:
             transcript_content: Raw transcript content

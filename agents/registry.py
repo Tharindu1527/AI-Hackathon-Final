@@ -2,7 +2,7 @@
 
 class AgentRegistry:
     """
-    Registry for managing podcast analysis agents
+    Registry for managing Meeting analysis agents
     
     This registry allows for centralized agent registration, configuration,
     and retrieval. It makes it easy to add new agents and integrate them

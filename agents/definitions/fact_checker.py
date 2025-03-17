@@ -5,13 +5,13 @@ from api.wiki_api import search_wikipedia
 
 @register_agent("fact_checker")
 class FactCheckerAgent(BaseAgent):
-    """Agent specialized in checking factual accuracy of podcast content"""
+    """Agent specialized in checking factual accuracy of Meeting content"""
     
     def __init__(self, model="gpt-4o"):
         """Initialize the Fact Checker Agent"""
         super().__init__(
             role="Fact Checker",
-            goal="Identify and verify factual claims made in the podcast",
+            goal="Identify and verify factual claims made in the Meeting",
             backstory="I'm a seasoned fact-checker with experience working for major news organizations. "
                     "I have a meticulous attention to detail and can quickly identify factual claims "
                     "that require verification. I use multiple reliable sources to confirm "

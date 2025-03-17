@@ -10,7 +10,7 @@ class ActionItemAgent(BaseAgent):
         """Initialize the Action Item Agent"""
         super().__init__(
             role="Action Item Extractor",
-            goal="Identify and extract actionable insights and recommendations from the podcast",
+            goal="Identify and extract actionable insights and recommendations from the Meeting",
             backstory="I excel at identifying practical next steps and business implications from discussions. "
                     "With a background in strategic consulting, I can translate insights into concrete "
                     "action items that organizations can implement for meaningful results.",
@@ -19,7 +19,7 @@ class ActionItemAgent(BaseAgent):
     
     def extract_action_items(self, summary_data, sentiment_data=None):
         """
-        Extract action items from podcast content
+        Extract action items from Meeting content
         
         Args:
             summary_data: Summary data (string or task result)

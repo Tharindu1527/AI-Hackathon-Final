@@ -4,22 +4,22 @@ from agents.registry import register_agent
 
 @register_agent("analyzer")
 class AnalyzerAgent(BaseAgent):
-    """Agent specialized in analyzing podcast content structure and topics"""
+    """Agent specialized in analyzing Meeting content structure and topics"""
     
     def __init__(self, model="gpt-4o"):
         """Initialize the Analyzer Agent"""
         super().__init__(
             role="Content Analyzer",
-            goal="Analyze the transcript to identify key topics, themes, and structure of the podcast",
+            goal="Analyze the transcript to identify key topics, themes, and structure of the Meeting",
             backstory="I have a PhD in linguistics and content analysis with years of experience "
                     "breaking down complex discussions. I can identify the main topics, "
-                    "track conversation flow, and understand the underlying structure of any podcast.",
+                    "track conversation flow, and understand the underlying structure of any Meeting.",
             model=model
         )
     
     def analyze_content(self, transcript_data):
         """
-        Analyze podcast content 
+        Analyze Meeting content 
         
         Args:
             transcript_data: Transcript data (string or task result)

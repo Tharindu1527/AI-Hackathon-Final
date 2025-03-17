@@ -10,10 +10,10 @@ def initialize_composio():
 
 def send_email_summary(podcast_data, recipients):
     """
-    Send podcast summary email to recipients using Composio API directly
+    Send Meeting summary email to recipients using Composio API directly
     
     Args:
-        podcast_data: Dictionary containing podcast analysis data
+        Meeting_data: Dictionary containing Meeting analysis data
         recipients: List of email addresses to send to
     """
     api_key = initialize_composio()
@@ -28,7 +28,7 @@ def send_email_summary(podcast_data, recipients):
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Podcast Summary: {podcast_data['title']}</title>
+        <title>Meeting Summary: {podcast_data['title']}</title>
         <style>
             body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }}
             h1 {{ color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }}
@@ -40,7 +40,7 @@ def send_email_summary(podcast_data, recipients):
         </style>
     </head>
     <body>
-        <h1>Podcast Summary: {podcast_data['title']}</h1>
+        <h1>Meeting Summary: {podcast_data['title']}</h1>
         <p class="date"><strong>Date Analyzed:</strong> {podcast_data['date_analyzed']}</p>
         
         <h2>Executive Summary</h2>
@@ -77,8 +77,8 @@ def send_email_summary(podcast_data, recipients):
                 },
                 json={
                     "to": recipient,
-                    "from": "podcast-analyzer@company.com",
-                    "subject": f"Podcast Summary: {podcast_data['title']}",
+                    "from": "Meeting-analyzer@company.com",
+                    "subject": f"Meeting Summary: {podcast_data['title']}",
                     "html": email_html
                 }
             )

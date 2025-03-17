@@ -4,13 +4,13 @@ from agents.registry import register_agent
 
 @register_agent("translator")
 class TranslatorAgent(BaseAgent):
-    """Agent specialized in translating podcast content to different languages"""
+    """Agent specialized in translating Meeting content to different languages"""
     
     def __init__(self, model="gpt-4o"):
         """Initialize the Translator Agent"""
         super().__init__(
             role="Content Translator",
-            goal="Accurately translate podcast content while preserving meaning, tone, and context",
+            goal="Accurately translate Meeting content while preserving meaning, tone, and context",
             backstory="I am a multilingual expert with deep knowledge of language nuances and cultural contexts. "
                     "With fluency in multiple languages and expertise in linguistics, "
                     "I can translate content while preserving the original meaning, style, and cultural references. "
@@ -47,10 +47,10 @@ class TranslatorAgent(BaseAgent):
     
     def translate_summary(self, summary_content, target_language):
         """
-        Translate a podcast summary to the target language
+        Translate a Meeting summary to the target language
         
         Args:
-            summary_content: Podcast summary content
+            summary_content: Meeting summary content
             target_language: Target language code or name
             
         Returns:

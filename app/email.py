@@ -9,7 +9,7 @@ def create_email_template_dir():
         os.makedirs(template_dir)
     return template_dir
 
-def save_email_template(template_content, template_name='podcast_summary.html'):
+def save_email_template(template_content, template_name='Meeting_summary.html'):
     """
     Save email template to file
     
@@ -41,7 +41,7 @@ def get_default_template_content():
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Podcast Summary: {{podcast_title}}</title>
+        <title>Meeting Summary: {{podcast_title}}</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -79,7 +79,7 @@ def get_default_template_content():
         </style>
     </head>
     <body>
-        <h1>Podcast Summary: {{podcast_title}}</h1>
+        <h1>Meeting Summary: {{podcast_title}}</h1>
         <p class="date"><strong>Date Analyzed:</strong> {{date_analyzed}}</p>
         
         <h2>Executive Summary</h2>
@@ -124,10 +124,10 @@ def prepare_email_template():
 
 def send_podcast_summary_email(podcast_data, recipients):
     """
-    Send podcast summary to board members
+    Send Meeting summary to board members
     
     Args:
-        podcast_data: Dictionary containing podcast analysis data
+        Meeting_data: Dictionary containing Meeting analysis data
         recipients: List of email addresses
         
     Returns:

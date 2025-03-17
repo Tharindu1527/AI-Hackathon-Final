@@ -45,10 +45,10 @@ def create_collection_if_not_exists(collection_name="podcast_vectors", vector_si
 
 def store_vectors(podcast_data, document_id):
     """
-    Store podcast vectors in Qdrant for semantic search
+    Store Meeting vectors in Qdrant for semantic search
     
     Args:
-        podcast_data: Dictionary containing podcast data
+        podcast_data: Dictionary containing Meeting data
         document_id: MongoDB document ID as a reference
         
     Returns:
@@ -136,7 +136,7 @@ def generate_consistent_id(document_id):
 
 def search_similar_content(query_text, limit=3):
     """
-    Search for podcast content similar to the query
+    Search for Meeting content similar to the query
     
     Args:
         query_text: Query text to search for

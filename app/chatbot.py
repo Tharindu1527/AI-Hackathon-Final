@@ -3,10 +3,10 @@ from database.mongodb import get_podcast_by_title
 
 def generate_answer(podcast_data, user_question):
     """
-    Generate an answer to a user question based on podcast data
+    Generate an answer to a user question based on Meeting data
     
     Args:
-        podcast_data: Dictionary containing podcast information
+        Meeting_data: Dictionary containing Meeting information
         user_question: User's question
         
     Returns:
@@ -17,11 +17,11 @@ def generate_answer(podcast_data, user_question):
     
     # Check if podcast_data is complete or needs more information
     if not podcast_data.get("summary") or podcast_data.get("summary") == "Summary not available":
-        return "I'm sorry, but I don't have enough information about this podcast. It may not have been fully analyzed yet."
+        return "I'm sorry, but I don't have enough information about this Meeting. It may not have been fully analyzed yet."
     
     # Create a context for the AI to use
     context = f"""
-    Podcast Title: {podcast_data.get('title', 'Unknown Title')}
+    Meeting Title: {podcast_data.get('title', 'Unknown Title')}
     Date Analyzed: {podcast_data.get('date_analyzed', 'Unknown Date')}
     
     Summary:
@@ -39,8 +39,8 @@ def generate_answer(podcast_data, user_question):
     
     # Create a prompt for the AI
     prompt = f"""
-    You are a helpful assistant that answers questions about podcasts.
-    Use the following podcast information to answer the user's question.
+    You are a helpful assistant that answers questions about Meetings.
+    Use the following Meeting information to answer the user's question.
     Only use information from the provided context. If the answer cannot be found
     in the context, acknowledge that you don't have enough information.
     
@@ -57,13 +57,13 @@ def generate_answer(podcast_data, user_question):
 
 def get_podcast_data_by_id(podcast_id):
     """
-    Get podcast data by ID or title
+    Get Meeting data by ID or title
     
     Args:
-        podcast_id: Podcast ID or title
+        Meeting_id: Meeting ID or title
         
     Returns:
-        dict: Podcast data or None
+        dict: Meeting data or None
     """
     from database.mongodb import get_podcast_by_id, get_podcast_by_title
     
@@ -81,9 +81,9 @@ def format_sources(podcast_data):
     Format source information for attribution
     
     Args:
-        podcast_data: Dictionary containing podcast information
+        Meeting_data: Dictionary containing Meeting information
         
     Returns:
         str: Formatted source information
     """
-    return f"Source: {podcast_data.get('title', 'Unknown Podcast')} (analyzed on {podcast_data.get('date_analyzed', 'unknown date')})"
+    return f"Source: {podcast_data.get('title', 'Unknown Meeting')} (analyzed on {podcast_data.get('date_analyzed', 'unknown date')})"

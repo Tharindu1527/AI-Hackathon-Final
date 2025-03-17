@@ -18,7 +18,7 @@ class AdvancedMultilingualCrew(BaseCrew):
         
         Args:
             model: LLM model to use
-            source_language: Source language of the podcast
+            source_language: Source language of the Meeting
             target_languages: List of languages to translate to
         """
         super().__init__(model=model)
@@ -165,7 +165,7 @@ class LocalizationCrew(AdvancedMultilingualCrew):
         
         Args:
             model: LLM model to use
-            source_culture: Source culture/region of the podcast
+            source_culture: Source culture/region of the Meeting
             target_cultures: List of cultures/regions to localize for
         """
         # Map cultures to languages

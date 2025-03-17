@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 from utils.config import get_openai_api_key
 
 class BaseAgent:
-    """Base class for all podcast analysis agents"""
+    """Base class for all Meeting analysis agents"""
     
     def __init__(self, role, goal, backstory, model="gpt-4o"):
         """

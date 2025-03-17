@@ -6,7 +6,7 @@ from agents.registry import get_agent, set_default_model, get_all_agents
 from utils.result_parser import parse_crew_result
 
 class BaseCrew:
-    """Base class for podcast analysis crews"""
+    """Base class for Meeting analysis crews"""
     
     def __init__(self, model="gpt-4o"):
         """

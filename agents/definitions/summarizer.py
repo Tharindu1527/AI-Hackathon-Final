@@ -10,7 +10,7 @@ class SummarizerAgent(BaseAgent):
         """Initialize the Summarizer Agent"""
         super().__init__(
             role="Executive Summarizer",
-            goal="Create concise, informative summaries of the podcast content for business leaders",
+            goal="Create concise, informative summaries of the Meeting content for business leaders",
             backstory="I specialize in distilling complex information into clear, actionable summaries "
                     "for executives. I understand what busy professionals need to know and can "
                     "highlight the most valuable insights from any content.",

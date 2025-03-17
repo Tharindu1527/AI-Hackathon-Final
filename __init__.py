@@ -1,8 +1,8 @@
 # __init__.py
 """
-Podcast Analysis System
+Meeting Analysis System
 
-A system for analyzing podcast content using AI agents to generate
+A system for analyzing Meeting content using AI agents to generate
 insights, summaries, sentiment analysis, and actionable recommendations.
 """
 

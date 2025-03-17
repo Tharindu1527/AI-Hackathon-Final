@@ -10,7 +10,7 @@ def initialize_assemblyai():
 
 def transcribe_podcast(audio_file_path):
     """
-    Transcribe a podcast audio file using AssemblyAI
+    Transcribe a Meeting audio file using AssemblyAI
     
     Args:
         audio_file_path: Path to the audio file

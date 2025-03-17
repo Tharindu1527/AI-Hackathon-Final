@@ -53,7 +53,7 @@ def get_mongodb_client():
 
 def get_podcast_collection():
     """
-    Get the MongoDB collection for podcast summaries
+    Get the MongoDB collection for Meeting summaries
     
     Returns:
         Collection: MongoDB collection
@@ -64,10 +64,10 @@ def get_podcast_collection():
 
 def store_podcast_data(podcast_data):
     """
-    Store podcast data in MongoDB
+    Store Meeting data in MongoDB
     
     Args:
-        podcast_data: Dictionary containing podcast data and analysis
+        podcast_data: Dictionary containing Meeting data and analysis
         
     Returns:
         str: ID of the inserted document
@@ -78,13 +78,13 @@ def store_podcast_data(podcast_data):
 
 def get_podcast_by_id(podcast_id):
     """
-    Retrieve podcast data by ID
+    Retrieve Meeting data by ID
     
     Args:
-        podcast_id: ID of the podcast document
+        podcast_id: ID of the Meeting document
         
     Returns:
-        dict: Podcast data or None if not found
+        dict: Meeting data or None if not found
     """
     from bson.objectid import ObjectId
     
@@ -103,13 +103,13 @@ def get_podcast_by_id(podcast_id):
 
 def get_podcast_by_title(title):
     """
-    Retrieve podcast data by title
+    Retrieve Meeting data by title
     
     Args:
-        title: Title of the podcast
+        title: Title of the Meeting
         
     Returns:
-        dict: Podcast data or None if not found
+        dict: Meeting data or None if not found
     """
     try:
         collection = get_podcast_collection()
@@ -129,52 +129,52 @@ def get_podcast_by_title(title):
             
         return result
     except Exception as e:
-        print(f"Error retrieving podcast by title: {e}")
+        print(f"Error retrieving Meeting by title: {e}")
         return None
 
 def get_all_podcasts():
     """
-    Retrieve all podcast data
+    Retrieve all Meeting data
     
     Returns:
-        list: List of all podcast documents
+        list: List of all Meeting documents
     """
     try:
         collection = get_podcast_collection()
         return list(collection.find())
     except Exception as e:
-        print(f"Error retrieving all podcasts: {e}")
+        print(f"Error retrieving all Meetings: {e}")
         return []
 
 def get_all_podcast_titles():
     """
-    Retrieve all podcast titles
+    Retrieve all Meeting titles
     
     Returns:
-        list: List of all podcast titles
+        list: List of all Meeting titles
     """
     try:
         collection = get_podcast_collection()
         results = collection.find({}, {"title": 1})
-        titles = [doc.get("title", f"Podcast {str(doc.get('_id', 'unknown'))}") for doc in results if doc.get("title")]
+        titles = [doc.get("title", f"Meeting {str(doc.get('_id', 'unknown'))}") for doc in results if doc.get("title")]
         
         # If no titles found, return mock data for testing
         if not titles:
-            print("No podcast titles found, returning mock data for testing")
-            return ["Sample Podcast 1", "Sample Podcast 2", "Sample Podcast 3"]
+            print("No Meeting titles found, returning mock data for testing")
+            return ["Sample Meeting 1", "Sample Meeting 2", "Sample Meeting 3"]
             
         return titles
     except Exception as e:
-        print(f"Error retrieving podcast titles: {e}")
+        print(f"Error retrieving Meeting titles: {e}")
         # Return mock data for testing
-        return ["Sample Podcast 1", "Sample Podcast 2", "Sample Podcast 3"]
+        return ["Sample Meeting 1", "Sample Meeting 2", "Sample Meeting 3"]
 
 def update_podcast_data(podcast_id, update_data):
     """
-    Update podcast data
+    Update Meeting data
     
     Args:
-        podcast_id: ID of the podcast document
+        podcast_id: ID of the Meeting document
         update_data: Dictionary containing fields to update
         
     Returns:
@@ -192,10 +192,10 @@ def update_podcast_data(podcast_id, update_data):
 
 def delete_podcast(podcast_id):
     """
-    Delete a podcast document
+    Delete a Meeting document
     
     Args:
-        podcast_id: ID of the podcast document
+        Meeting_id: ID of the Meeting document
         
     Returns:
         bool: True if deletion was successful

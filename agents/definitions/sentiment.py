@@ -10,7 +10,7 @@ class SentimentAgent(BaseAgent):
         """Initialize the Sentiment Agent"""
         super().__init__(
             role="Sentiment Analyzer",
-            goal="Analyze the emotional tone and sentiment throughout the podcast",
+            goal="Analyze the emotional tone and sentiment throughout the Meeting",
             backstory="With a background in psychology and NLP, I can detect subtle emotional cues in communication. "
                     "I understand how tone, language choice, and speech patterns reveal attitudes and feelings. "
                     "I can map the emotional journey of a conversation.",
@@ -19,7 +19,7 @@ class SentimentAgent(BaseAgent):
     
     def analyze_sentiment(self, transcript_data, analysis_data=None):
         """
-        Analyze sentiment of podcast content
+        Analyze sentiment of Meeting content
         
         Args:
             transcript_data: Transcript data (string or task result)

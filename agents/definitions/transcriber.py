@@ -4,16 +4,16 @@ from agents.registry import register_agent
 
 @register_agent("transcriber")
 class TranscriberAgent(BaseAgent):
-    """Agent specialized in podcast transcription refinement"""
+    """Agent specialized in Meeting transcription refinement"""
     
     def __init__(self, model="gpt-4o"):
         """Initialize the Transcriber Agent"""
         super().__init__(
-            role="Podcast Transcriber",
-            goal="Accurately refine and enhance the raw podcast transcript, identifying speakers and ensuring clarity",
+            role="Meeting Transcriber",
+            goal="Accurately refine and enhance the raw Meeting transcript, identifying speakers and ensuring clarity",
             backstory="I am an expert in speech recognition with exceptional hearing abilities. "
                     "I can distinguish different speakers, correct transcription errors, and ensure "
-                    "the transcript accurately represents what was said in the podcast.",
+                    "the transcript accurately represents what was said in the Meeting.",
             model=model
         )
     

@@ -12,11 +12,11 @@ from agents.tasks.research import ResearchTask
 from agents.tasks.translation import TranslationTask
 
 class PodcastCrew(BaseCrew):
-    """Standard crew for podcast analysis"""
+    """Standard crew for Meeting analysis"""
     
     def __init__(self, model="gpt-4o"):
         """
-        Initialize the podcast crew
+        Initialize the Meeting crew
         
         Args:
             model: LLM model to use
@@ -32,7 +32,7 @@ class PodcastCrew(BaseCrew):
     
     def run_analysis(self, transcript_content):
         """
-        Run podcast analysis with all agents
+        Run Meeting analysis with all agents
         
         Args:
             transcript_content: Raw transcript content
@@ -71,11 +71,11 @@ class PodcastCrew(BaseCrew):
         return self.run()
 
 class EnhancedPodcastCrew(PodcastCrew):
-    """Enhanced podcast crew with fact checking and research"""
+    """Enhanced Meeting crew with fact checking and research"""
     
     def __init__(self, model="gpt-4o"):
         """
-        Initialize the enhanced podcast crew
+        Initialize the enhanced Meeting crew
         
         Args:
             model: LLM model to use
@@ -88,7 +88,7 @@ class EnhancedPodcastCrew(PodcastCrew):
     
     def run_analysis(self, transcript_content):
         """
-        Run enhanced podcast analysis with all agents including fact checking and research
+        Run enhanced Meeting analysis with all agents including fact checking and research
         
         Args:
             transcript_content: Raw transcript content
@@ -153,11 +153,11 @@ class EnhancedPodcastCrew(PodcastCrew):
         return self.run()
 
 class MultilingualPodcastCrew(PodcastCrew):
-    """Multilingual podcast crew with translation capabilities"""
+    """Multilingual Meeting crew with translation capabilities"""
     
     def __init__(self, model="gpt-4o", target_languages=None):
         """
-        Initialize the multilingual podcast crew
+        Initialize the multilingual Meeting crew
         
         Args:
             model: LLM model to use
@@ -173,7 +173,7 @@ class MultilingualPodcastCrew(PodcastCrew):
     
     def run_analysis(self, transcript_content):
         """
-        Run multilingual podcast analysis
+        Run multilingual Meeting analysis
         
         Args:
             transcript_content: Raw transcript content
@@ -254,11 +254,11 @@ class MultilingualPodcastCrew(PodcastCrew):
         return json.dumps(result)
 
 class ResearchPodcastCrew(BaseCrew):
-    """Research-focused podcast crew that prioritizes factual information and references"""
+    """Research-focused Meeting crew that prioritizes factual information and references"""
     
     def __init__(self, model="gpt-4o"):
         """
-        Initialize the research podcast crew
+        Initialize the research Meeting crew
         
         Args:
             model: LLM model to use
@@ -275,7 +275,7 @@ class ResearchPodcastCrew(BaseCrew):
     
     def run_analysis(self, transcript_content):
         """
-        Run research-focused podcast analysis
+        Run research-focused Meeting analysis
         
         Args:
             transcript_content: Raw transcript content
