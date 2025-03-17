@@ -20,7 +20,7 @@ from api.tts import text_to_speech
 load_environment()
 
 def main():
-    st.title("Podcast Analyzer & Chatbot")
+    st.title("Meeting Analyzer & Chatbot")
 
     # Add app version and sidebar config
     st.sidebar.title("Configuration")
@@ -33,13 +33,13 @@ def main():
         "enhanced": "Enhanced (with fact-checking)",
         "multilingual": "Multilingual",
         "research": "Research-focused",
-        "deep_research": "Deep Research",
+        
         "fact_checking": "Fact Checking",
         "advanced_multilingual": "Advanced Multilingual",
         "localization": "Localization"
     }
     
-    crew_options = [crew_display_names.get(crew, crew.replace("_", " ").title()) for crew in available_crews[:5]]  # Limit to first 5 for simplicity
+    crew_options = [crew_display_names.get(crew, crew.replace("_", " ").title()) for crew in available_crews[:4]]  # Limit to first 5 for simplicity
     
     crew_type = st.sidebar.radio(
         "Crew Type",
@@ -51,7 +51,7 @@ def main():
     selected_crew_type = reverse_mapping.get(crew_type, "standard")
     
     # Model selection
-    model_options = ["gpt-4o", "gpt-3.5-turbo"]
+    model_options = ["gpt-4o"]
     selected_model = st.sidebar.selectbox("AI Model", options=model_options, index=0)
     
     # Multilingual options
@@ -75,23 +75,23 @@ def main():
         st.sidebar.warning(f"⚠️ Database connection unavailable (using mock data): {str(e)}")
     
     # Create tabs for different functions
-    tab1, tab2, tab3, tab4 = st.tabs(["Analyze Podcast", "Chat about Podcasts", "Listen to Summaries", "Fact Check"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Analyze Meeting", "Chat about Meeting", "Listen to Summaries", "Fact Check"])
     
     with tab1:
-        st.header("Upload and Analyze Podcast")
+        st.header("Upload and Analyze Meeting")
         
-        uploaded_file = st.file_uploader("Choose a podcast audio file", type=["mp3", "wav", "m4a"])
+        uploaded_file = st.file_uploader("Choose a Meeting audio file", type=["mp3", "wav", "m4a"])
         
-        podcast_title = st.text_input("Podcast Title")
+        podcast_title = st.text_input("Meeting Title")
         board_emails = st.text_area("Board Member Emails (one per line)")
         
-        if st.button("Analyze Podcast", key="analyze_podcast_btn"):
+        if st.button("Analyze Meeting", key="analyze_podcast_btn"):
             if not podcast_title:
-                st.error("Please enter a podcast title")
+                st.error("Please enter a Meeting title")
                 return
                 
             if uploaded_file is None:
-                st.error("Please upload a podcast audio file")
+                st.error("Please upload a Meeting audio file")
                 return
                 
             # Save uploaded file temporarily
@@ -100,9 +100,9 @@ def main():
                 audio_path = tmp_file.name
             
             try:
-                with st.spinner("Analyzing podcast..."):
+                with st.spinner("Analyzing Meeting..."):
                     # Use AssemblyAI for transcription
-                    st.info("Transcribing podcast...")
+                    st.info("Transcribing Meeting...")
                     try:
                         transcript = transcribe_podcast(audio_path)
                         st.success("Transcription complete!")
@@ -170,7 +170,7 @@ def main():
                             st.error(f"Error sending email: {str(e)}")
                     
                     # Display results
-                    st.success("Podcast analysis complete!")
+                    st.success("Meeting analysis complete!")
                     
                     # Executive Summary
                     st.subheader("Executive Summary")
@@ -246,26 +246,26 @@ def main():
                     os.unlink(audio_path)
             except Exception as main_error:
                 st.error(f"An error occurred during analysis: {str(main_error)}")
-                st.info("Please try again with a different podcast or check the logs for more details.")                
+                st.info("Please try again with a different Meeting or check the logs for more details.")                
     
     with tab2:
-        st.header("Chat about Analyzed Podcasts")
+        st.header("Chat about Analyzed Meetings")
         
         # Podcast selection
         podcast_titles = get_all_podcast_titles()
         if not podcast_titles:
-            st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
+            st.warning("No analyzed Meetings found. Please analyze some Meetings first.")
         else:
             selected_podcast = st.selectbox(
-                "Select a podcast to chat about:",
+                "Select a Meeting to chat about:",
                 options=podcast_titles,
                 index=0,
                 key="chat_podcast_select"
             )
                 
-            st.write(f"Selected podcast: **{selected_podcast}**")
+            st.write(f"Selected Meeting: **{selected_podcast}**")
             
-            user_question = st.text_input("Ask a question about this podcast")
+            user_question = st.text_input("Ask a question about this Meeting")
             
             if st.button("Ask", key="ask_question_btn"):
                 if not user_question:
@@ -278,7 +278,7 @@ def main():
                         podcast_data = get_podcast_by_title(selected_podcast)
                         
                         if not podcast_data:
-                            st.error(f"Could not find podcast data for '{selected_podcast}'")
+                            st.error(f"Could not find Meeting data for '{selected_podcast}'")
                         else:
                             # Generate answer
                             answer = generate_answer(podcast_data, user_question)
@@ -298,20 +298,20 @@ def main():
                                         st.error("Failed to generate audio for answer")
                             
                             st.subheader("Source")
-                            st.write(f"Based on podcast: {podcast_data.get('title', 'Unknown Podcast')}")
+                            st.write(f"Based on Meeting: {podcast_data.get('title', 'Unknown Meeting')}")
                     except Exception as e:
                         st.error(f"An error occurred: {str(e)}")
     
     with tab3:
-        st.header("Listen to Podcast Summaries")
+        st.header("Listen to Meeting Summaries")
         
         # Podcast selection
         podcast_titles = get_all_podcast_titles()
         if not podcast_titles:
-            st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
+            st.warning("No analyzed Meetings found. Please analyze some Meetings first.")
         else:
             selected_podcast = st.selectbox(
-                "Select a podcast to listen to:",
+                "Select a Meeting to listen to:",
                 options=podcast_titles,
                 index=0,
                 key="listen_podcast_select"
@@ -336,7 +336,7 @@ def main():
                 with st.spinner("Generating audio summary..."):
                     try:
                         if not podcast_data:
-                            st.error(f"Could not find podcast data for '{selected_podcast}'")
+                            st.error(f"Could not find Meeting data for '{selected_podcast}'")
                         else:
                             # Get the appropriate summary based on language
                             if selected_language.lower() == "english":
@@ -375,28 +375,28 @@ def main():
                         st.error(f"An error occurred: {str(e)}")
     
     with tab4:
-        st.header("Fact Check Podcast")
+        st.header("Fact Check Meeting")
         
         # Podcast selection
         podcast_titles = get_all_podcast_titles()
         if not podcast_titles:
-            st.warning("No analyzed podcasts found. Please analyze some podcasts first.")
+            st.warning("No analyzed Meetings found. Please analyze some Meetings first.")
         else:
             selected_podcast = st.selectbox(
-                "Select a podcast to fact check:",
+                "Select a Meeting to fact check:",
                 options=podcast_titles,
                 index=0,
                 key="fact_check_podcast_select"
             )
             
             if st.button("Extract Claims", key="extract_claims_btn"):
-                with st.spinner("Extracting claims from podcast..."):
+                with st.spinner("Extracting claims from Meeting..."):
                     try:
                         # Get podcast data
                         podcast_data = get_podcast_by_title(selected_podcast)
                         
                         if not podcast_data:
-                            st.error(f"Could not find podcast data for '{selected_podcast}'")
+                            st.error(f"Could not find Meeting data for '{selected_podcast}'")
                         else:
                             # Get the transcript
                             transcript = podcast_data.get("transcript", "")
@@ -412,7 +412,7 @@ def main():
                                 claims = fact_checker.extract_claims(transcript)
                                 
                                 if not claims:
-                                    st.warning("No factual claims were identified in this podcast")
+                                    st.warning("No factual claims were identified in this Meeting")
                                 else:
                                     st.success(f"Found {len(claims)} factual claims")
                                     
